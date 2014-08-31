@@ -101,3 +101,12 @@ class ConfigNode:
             text += "%s%s %s\n" % ("    " * (level + 1), node[0], ntext)
         text += "%s}\n" % ("    " * (level))
         return text
+
+if __name__ == "__main__":
+    import sys
+    for arg in sys.argv[1:]:
+        text = open(arg, "rt").read()
+        try:
+            node = ConfigNode.load(text)
+        except ConfigNodeError, e:
+            print(arg+e.message)
