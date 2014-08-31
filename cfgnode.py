@@ -43,16 +43,17 @@ class ConfigNode:
             key = script.token
             if script.tokenAvailable(True):
                 script.getToken(True)
+                line = script.line
                 if script.token == '=':
                     value = ''
                     if script.tokenAvailable(False):
                         script.getLine()
                         value = script.token
-                    node.values.append((key, value))
+                    node.values.append((key, value, line))
                 elif script.token == '{':
                     new_node = ConfigNode()
                     ConfigNode.ParseNode(new_node, script, False)
-                    node.nodes.append((key, new_node))
+                    node.nodes.append((key, new_node, line))
                 else:
                     cfg_error(script, "unexpected " + script.token)
         if not top:
