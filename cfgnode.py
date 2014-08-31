@@ -86,3 +86,18 @@ class ConfigNode:
             if v[0] == key:
                 values.append(v[1])
         return values
+    def AddNode(self, key):
+        node = ConfigNode ()
+        self.nodes.append((key, node))
+        return node
+    def AddValue(self, key, value):
+        self.values.append((key, value))
+    def ToString(self, level = 0):
+        text = "{ \n"
+        for val in self.values:
+            text += "%s%s = %s\n" % ("    " * (level + 1), val[0], val[1])
+        for node in self.nodes:
+            ntext = node[1].ToString(level + 1)
+            text += "%s%s %s\n" % ("    " * (level + 1), node[0], ntext)
+        text += "%s}\n" % ("    " * (level))
+        return text
