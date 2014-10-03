@@ -94,6 +94,12 @@ class ConfigNode:
         return node
     def AddValue(self, key, value):
         self.values.append((key, value))
+    def SetValue(self, key, value):
+        for i in range(len(self.values)):
+            if self.values[i][0] == key:
+                self.values[i] = key, value, 0
+                return
+        self.AddValue(key, value)
     def ToString(self, level = 0):
         text = "{ \n"
         for val in self.values:
