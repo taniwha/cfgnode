@@ -24,6 +24,7 @@ from script import Script
 class ConfigNodeError(Exception):
     def __init__(self, fname, line, message):
         Exception.__init__(self, "%s:%d: %s" % (fname, line, message))
+        self.message = "%s:%d: %s" % (fname, line, message)
         self.line = line
 
 def cfg_error(self, msg):
@@ -109,5 +110,5 @@ if __name__ == "__main__":
         text = open(arg, "rt").read()
         try:
             node = ConfigNode.load(text)
-        except ConfigNodeError, e:
+        except ConfigNodeError as e:
             print(arg+e.message)
