@@ -34,21 +34,24 @@ def find_parts(path):
     except ConfigNodeError as e:
         #print(path+e.message)
         return
+    lineoffs = 0
     for n in cfg.nodes:
         name, node, line = n
         if name != "PART":
             continue
         mass = node.GetValue("mass");
         cost = node.GetValue("cost");
+        costLine = node.GetValueLine("cost");
         ecost = node.GetValue("entryCost")
         newcost = float(mass) * parts_cost
-        #rescost = get_resource_cost(node.GetNodes("RESOURCE"))
-        rescost = 0
+        rescost = get_resource_cost(node.GetNodes("RESOURCE"))
+        #rescost = 0
         #print ("%s c %s m %s c/m %f %s %g %g" % (node.GetValue("name"), cost, mass, float(cost)/float(mass), ecost, newcost, rescost))
-        print ("sed -i -e 's/\<cost\>\s*=\s*%s\>/cost = %g/' '%s'" % (cost, newcost + rescost, path))
+        print (r"sed -i -e '%ds/\<cost\>\s*=\s*%s\>/cost = %g\r\n\tTechRequired = specializedConstruction\r\n\tentryCost = 2000/' '%s'" % (costLine + lineoffs, cost, newcost + rescost, path))
+        lineoffs += 2
 
 recurse_tree("/home/bill/ksp/KSP_linux/GameData", find_resources)
 #pprint(resources)
 parts_cost = 1.2 * float(resources["RocketParts"].GetValue("unitCost")) / float(resources["RocketParts"].GetValue("density"))
 #print(parts_cost)
-recurse_tree("/home/bill/ksp/src/cost", find_parts)
+recurse_tree("/home/bill/ksp/KSP_linux/GameData/HexCans", find_parts)
