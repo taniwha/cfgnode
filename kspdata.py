@@ -61,5 +61,7 @@ def get_resource_cost(nodes):
         amount = resnode.GetValue("amount")
         maxAmount = resnode.GetValue("maxAmount")
         rescost = resources[name].GetValue("unitCost")
+        if rescost == None:
+            rescost = 0
         cost += float(amount) * float(rescost)
     return cost
