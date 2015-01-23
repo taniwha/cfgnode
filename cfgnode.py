@@ -73,6 +73,11 @@ class ConfigNode:
             if n[0] == key:
                 return n[1]
         return None
+    def GetNodeLine(self, key):
+        for n in self.nodes:
+            if n[0] == key:
+                return n[2]
+        return None
     def GetNodes(self, key):
         nodes = []
         for n in self.nodes:
@@ -83,6 +88,11 @@ class ConfigNode:
         for v in self.values:
             if v[0] == key:
                 return v[1]
+        return None
+    def GetValueLine(self, key):
+        for v in self.values:
+            if v[0] == key:
+                return v[2]
         return None
     def GetValues(self, key):
         values = []
