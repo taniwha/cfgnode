@@ -36,16 +36,22 @@ class ConfigNode:
         self.nodes = []
     @classmethod
     def ParseNode(cls, node, script, top = False):
-        while script.getToken(True) != None:
+        while script.tokenAvailable(True):
+            token_start = script.pos
+            if script.getToken(True) == None:
+                break
             if script.token == "\xef\xbb\xbf":
                 continue
             if script.token in (top and ['{', '}', '='] or ['{', '=']):
                 cfg_error(script, "unexpected " + script.token)
             if script.token == '}':
                 return
+            token_end = script.pos
             key = script.token
-            if script.tokenAvailable(True):
+            #print(key,script.line)
+            while script.tokenAvailable(True):
                 script.getToken(True)
+                token_end = script.pos
                 line = script.line
                 if script.token == '=':
                     value = ''
@@ -53,12 +59,15 @@ class ConfigNode:
                         script.getLine()
                         value = script.token
                     node.values.append((key, value, line))
+                    break
                 elif script.token == '{':
                     new_node = ConfigNode()
                     ConfigNode.ParseNode(new_node, script, False)
                     node.nodes.append((key, new_node, line))
+                    break
                 else:
-                    cfg_error(script, "unexpected " + script.token)
+                    #cfg_error(script, "unexpected " + script.token)
+                    key = script.text[token_start:token_end]
         if not top:
             cfg_error(script, "unexpected end of file")
     @classmethod
