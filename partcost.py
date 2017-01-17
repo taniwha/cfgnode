@@ -108,6 +108,7 @@ part_type={
     "OMD":"detector",
     "ExOrbitalDock":"pad",
     "ExSurveyStake":"structural",
+    "ExMallet":"structural",
     "ExWorkshop":"workshop",
     "ELTankLargeMTL":"tank",
     "ELTankLargeORE":"tank",
@@ -154,13 +155,13 @@ def find_parts(path):
         m = float(mass)
         #print ("%s c %s m %s c/m %f e %s n %g r %g n + r %g (c-r)/m %g %g" % (pname, cost, mass, c / m, ecost, newcost, rescost, newcost + rescost, (c - rescost) / m, (c - rescost) / m / rp_cost))
         #print (r"sed -i -e '%ds/\<cost\>\s*=\s*%s\>/cost = %g\r\n\tTechRequired = specializedConstruction\r\n\tentryCost = 2000/' '%s'" % (costLine + lineoffs, cost, newcost + rescost, path))
-        print (r"sed -i -e '%ds/\<cost\>\s*=\s*%s\>.*/cost = %g/' '%s'" % (costLine + lineoffs, cost, newcost + rescost, path))
-        lineoffs += 2
+        if cost != ("%g" % (newcost + rescost)):
+            print (r"sed -i -e '%ds/\<cost\>\s*=\s*%s\>.*/cost = %g/' '%s'" % (costLine + lineoffs, cost, newcost + rescost, path))
+        #lineoffs += 2
 
 recurse_tree("/home/bill/ksp/KSP_linux/GameData", find_resources)
-#pprint(resources)
+pprint(resources)
 rp_cost = float(resources["RocketParts"].GetValue("unitCost")) / float(resources["RocketParts"].GetValue("density"))
-#print(parts_cost)
-recurse_tree("/home/bill/ksp/KSP_linux/GameData/ModsByTal", find_parts)
+recurse_tree("/home/bill/ksp/KSP_linux/GameData/TalisarParts", find_parts)
 recurse_tree("/home/bill/ksp/src/Extraplanetary-Launchpads/GameData/ExtraplanetaryLaunchpads", find_parts)
 recurse_tree("/home/bill/ksp/KSP_linux/GameData/mystuff", find_parts)
