@@ -122,7 +122,7 @@ class ConfigNode:
                 return
         self.AddValue(key, value)
     def ToString(self, level = 0):
-        text = "{ \n"
+        text = "{\n"
         for val in self.values:
             text += "%s%s = %s\n" % ("    " * (level + 1), val[0], val[1])
         for node in self.nodes:
