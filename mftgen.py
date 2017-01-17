@@ -32,6 +32,12 @@ tank_masses = {
     "Xenon":0.000072,
     "unknown":0.000625,
 }
+basemass_override = {
+    "liquidEngine303":"-1",
+    "liquidEngine303_Boattail":"-1",
+    "liquidEngine909":"-1",
+    "liquidEngine909_Boattail":"-1",
+}
 utilizations = {
     "LiquidFuel":1.0,
     "Oxidizer":1.0,
@@ -81,6 +87,8 @@ part_blacklist = {
     "FuelCellArray",
     "LaunchEscapeSystem",
     "mk2DockingPort",
+
+    "mk1podNew",
 }
 def find_parts(path):
     if path[-4:].lower() != ".cfg":
@@ -135,10 +143,13 @@ def find_parts(path):
         module.AddValue("name", "ModuleFuelTanks")
         module.AddValue("volume", "%g" % volume)
         module.AddValue("type", tank_type)
-        tm = tank_masses[tank_type]
-        bm = pmass / volume
-        if ("%g" % tm) != ("%g" % bm):
-            module.AddValue("basemass", "volume * %g" % bm)
+        if pname in basemass_override:
+            module.AddValue("basemass", basemass_override[pname])
+        else:
+            tm = tank_masses[tank_type]
+            bm = pmass / volume
+            if ("%g" % tm) != ("%g" % bm):
+                module.AddValue("basemass", "volume * %g" % bm)
         print("@PART[%s] %s" % (pname, apart.ToString()))
 
 recurse_tree("/home/bill/ksp/KSP_linux/GameData", find_resources)
