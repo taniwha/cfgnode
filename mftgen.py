@@ -89,13 +89,14 @@ part_blacklist = {
     "mk2DockingPort",
 
     "mk1podNew",
+
+    "MEMLander",
 }
 def find_parts(path):
     if path[-4:].lower() != ".cfg":
         return
-    text = open(path, "rt").read()
     try:
-        cfg = ConfigNode.load(text)
+        cfg = ConfigNode.loadfile(path)
     except ConfigNodeError as e:
         #print(path+e.message)
         return
@@ -139,7 +140,7 @@ def find_parts(path):
             continue
 
         apart = ConfigNode()
-        module = apart.AddNode("MODULE")
+        module = apart.AddNewNode("MODULE")
         module.AddValue("name", "ModuleFuelTanks")
         module.AddValue("volume", "%g" % volume)
         module.AddValue("type", tank_type)

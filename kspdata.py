@@ -42,10 +42,8 @@ def recurse_tree(path, func):
 def find_resources(path):
     if path[-4:].lower() != ".cfg":
         return
-    bytes = open(path, "rb").read()
-    text = "".join(map(lambda b: chr(b), bytes))
     try:
-        cfg = ConfigNode.load(text)
+        cfg = ConfigNode.loadfile(path)
     except ConfigNodeError as e:
         #print(path+e.message)
         return
