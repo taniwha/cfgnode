@@ -25,11 +25,18 @@ from pprint import *
 import sys
 import os
 
+kerbals = {
+    "kerbalEVAVintage",
+    "kerbalEVAfemaleVintage",
+    "kerbalEVA",
+    "kerbalEVAfemale",
+}
+
 tank_masses = {
     "Default":0.000625,
     "Fuselage":0.000625,
-    "RCS":0.0006,
-    "Xenon":0.000072,
+    "RCS":0.000666667,
+    "Xenon":0.0000333333,
     "unknown":0.000625,
 }
 basemass_override = {
@@ -51,6 +58,7 @@ utilizations = {
 resource_blacklist = {
     "Ablator",
     "IntakeAir",
+    "SolidFuel",
     "Ore",
 }
 part_blacklist = {
@@ -60,6 +68,7 @@ part_blacklist = {
     "Mark2Cockpit",
     "landerCabinSmall",
     "mk1pod",
+    "mk1-3pod",
     "mk2Cockpit_Inline",
     "mk2Cockpit_Standard",
     "mk2DroneCore",
@@ -105,7 +114,10 @@ def find_parts(path):
         if name != "PART":
             continue
         pname = node.GetValue("name")
+        if pname in kerbals:
+            continue
         resnodes = node.GetNodes("RESOURCE")
+        #print(pname)
         if not resnodes:
             continue
         pmass = float(node.GetValue("mass"))
@@ -153,6 +165,6 @@ def find_parts(path):
                 module.AddValue("basemass", "volume * %g" % bm)
         print("@PART[%s] %s" % (pname, apart.ToString()))
 
-recurse_tree("/home/bill/ksp/KSP_linux/GameData", find_resources)
+recurse_tree("/home/bill/ksp/KSP_linux-1.4.1/GameData", find_resources)
 gamedata = sys.argv[1]
 recurse_tree(gamedata, find_parts)
