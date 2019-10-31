@@ -30,6 +30,8 @@ kerbals = {
     "kerbalEVAfemaleVintage",
     "kerbalEVA",
     "kerbalEVAfemale",
+    "kerbalEVAFuture",
+    "kerbalEVAfemaleFuture",
 }
 
 tank_masses = {
@@ -68,11 +70,13 @@ part_blacklist = {
     "Mark2Cockpit",
     "landerCabinSmall",
     "mk1pod",
+    "mk1pod_v2",
     "mk1-3pod",
     "mk2Cockpit_Inline",
     "mk2Cockpit_Standard",
     "mk2DroneCore",
     "mk2LanderCabin",
+    "mk2LanderCabin_v2",
     "mk3Cockpit_Shuttle",
     "probeCoreCube",
     "probeCoreHex",
