@@ -22,6 +22,9 @@
 from cfgnode import *
 import sys
 
+identifer = {"_"}
+mmcommand = {"@", "%", "-", "!", "+", "$"}
+
 def warning(file, line, message):
     print("%s:%d: warning: %s" % (file, line, message))
 
@@ -29,7 +32,10 @@ def checknode(file, node, level=0):
     for subnode in node.nodes:
         name = subnode[0]
         line = subnode[2]
-        if name[0] in "@%-!+$":
+        if name[0] not in identifer.union(mmcommand):
+            warning(file, line,
+                    "node name begins with unrecognized character:", name)
+        if "[" in name or "]" in name:
             brace = 0
             for c in name:
                 if c == '[':
@@ -38,12 +44,13 @@ def checknode(file, node, level=0):
                     brace -= 1
             if brace:
                 warning(file, line, "unbalanced [] brackets: " + name)
-        elif "[" in name or "]" in name:
-            warning(file, line, "name specifier in node with no MM command: " + name)
         else:
             pass
         checknode(file, subnode[1], level + 1)
 
+for i in range(26):
+    identifer.add(chr(i+ord('A')))
+    identifer.add(chr(i+ord('a')))
 for arg in sys.argv[1:]:
     text = open(arg, "rt").read()
     try:
