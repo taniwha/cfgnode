@@ -48,7 +48,7 @@ for arg in sys.argv[1:]:
     text = open(arg, "rt").read()
     try:
         cfg = ConfigNode.load(text)
-    except ConfigNodeError, e:
+    except ConfigNodeError as e:
         print(arg+e.message)
         continue
     checknode(arg, cfg)
