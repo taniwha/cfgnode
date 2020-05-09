@@ -22,6 +22,7 @@
 from cfgnode import *
 import sys
 import os
+from uuid import uuid4
 
 def recurse_tree(path, func):
     files = os.listdir(path)
@@ -52,7 +53,16 @@ def find_statics(path):
             uuid = inst.GetValue("UUID")
             if uuid not in static_by_uuid:
                 static_by_uuid[uuid] = []
-            static_by_uuid[uuid].append((group, pname))
+            static_by_uuid[uuid].append((group, pname, path))
+
+def genUUID():
+    while True:
+        uuid = uuid4().urn[9:]
+        if uuid not in static_by_uuid:
+            static_by_uuid[uuid] = None
+            return uuid
+
+files_to_fix = set()
 
 recurse_tree(".", find_statics)
 for u in static_by_uuid:
@@ -61,3 +71,22 @@ for u in static_by_uuid:
         print(f"duplicate uuid {u} on:")
         for d in s:
             print("   ", d[0], d[1])
+            files_to_fix.add(d[2])
+
+while files_to_fix:
+    path = files_to_fix.pop()
+    node = ConfigNode.loadfile(path)
+    of = open(path, "wt")
+    for n in node.nodes:
+        if n[0].split(':', 1)[0] != 'STATIC':
+            continue
+        static = n[1]
+        pname = static.GetValue("pointername")
+        instances = static.GetNodes("Instances")
+        for inst in instances:
+            group = inst.GetValue("Group")
+            uuid = genUUID()
+            print(inst.GetValue("UUID"), uuid)
+            inst.SetValue("UUID", uuid)
+        of.write(n[0] + " " + static.ToString())
+    of.close()
