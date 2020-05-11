@@ -114,6 +114,26 @@ def vector(name, value, path, line):
         except ValueError:
             error(path, line, f"{name}[i] not a valid float")
 
+def color(name, value, path, line):
+    if value[0] == '#':
+        if len(value) != 7:
+            error(path, line, f"{name} must be # followed by 6 hex digits")
+        try:
+            val = int('0x'+value[1:])
+        except ValueError:
+            error(path, line, f"{name} must be # followed by 6 hex digits")
+    else:
+        vals = value.split(",")
+        if len(vals) != 3:
+            error(path, line, f"{name} must be 3 comma-separated floats")
+        for i, v in enumerate(vals):
+            try:
+                val = float(v)
+            except ValueError:
+                error(path, line, f"{name}[i] not a valid float")
+            if val < 0 or val > 1:
+                error(path, line, f"{name}[i] should be in the range 0 to 1")
+
 def quaternion(name, value, path, line):
     vals = value.split(",")
     if len(vals) != 4:
@@ -406,21 +426,90 @@ resource_valid_fields = {
     'maxAmount': positive_float,
 }
 
-def parse_resource(path, line, resnode):
+resdef_required_fields = (
+    ('name', error, "Missing field 'name'"),
+    ('displayName', warning, "'displayName' defaults to resource name"),
+    ('abbreviation', warning, "'abbreviation' defaults to displayName[;2]"),
+    ('density', warning, "'density' defaults to 1"),
+    ('volume', warning, "'volume' defaults to 5"),
+    ('unitCost', warning, "'unitCost' defaults to 0"),
+    ('hsp', warning, "'hsp' defaults to 0"),
+    ('isTweakable', warning, "'isTweakable' defaults to true"),
+    ('isVisible', warning, "'isVisible' defaults to true"),
+    ('flowMode', warning, "'flowMode' defaults to NO_FLOW"),
+    ('transfer', warning, "'transfer' defaults to NONE"),
+    ('color', warning, "'color' defaults to 1,1,1 (white)"),
+)
+
+flowMode_enum = {
+    'NO_FLOW',
+    'ALL_VESSEL',
+    'STAGE_PRIORITY_FLOW',
+    'STACK_PRIORITY_SEARCH',
+    'ALL_VESSEL_BALANCE',
+    'STAGE_PRIORITY_FLOW_BALANCE',
+    'STAGE_STACK_FLOW',
+    'STAGE_STACK_FLOW_BALANCE',
+    'NULL',
+}
+
+transfer_enum = {
+    'NONE',
+    'DIRECT',
+    'PUMP',
+}
+
+resdef_valid_fields = {
+    'name': None,
+    'displayName': None,
+    'abbreviation': None,
+    'density': positive_float,
+    'volume': positive_float,
+    'unitCost': positive_float,
+    'hsp': positive_float,
+    'isTweakable': boolean,
+    'isVisible': boolean,
+    'isDrainable': boolean,
+    'flowMode': enum(flowMode_enum),
+    'transfer': enum(transfer_enum),
+    'color': color,
+}
+
+resdrain_required_fields = (
+    ('isDrainable', warning, "'isDrainable' defaults to true"),
+    ('showDrainFX', warning, "'showDrainFX' defaults to true"),
+    ('drainFXPriority', warning, "'drainFXPriority' defaults to 5"),
+    ('drainForceISP', warning, "'drainFXPriority' defaults to 50"),
+    ('drainFXDefinition ', warning, "'drainFXDefinition ' defaults to gasDraining"),
+)
+
+resdrain_valid_fields = {
+    'isDrainable': boolean,
+    'showDrainFX': boolean,
+    'drainFXPriority': positive_int,
+    'drainForceISP': positive_nonzero_float,
+    'drainFXDefinition': None,
+}
+
+def check_fields(path, line, node, nodename, required_fields, valid_fields, check_special=None):
     seen_fields = {}
-    for req in resource_required_fields:
-        if not resnode.HasValue(req[0]):
+    for req in required_fields:
+        if not node.HasValue(req[0]):
             req[1](path, line, req[2])
-    for name, value, line in resnode.values:
+    for name, value, line in node.values:
         if name in seen_fields:
             warning(path, line, f"{name} dups {name} on line {seen_fields[name]}")
         else:
             seen_fields[name] = line
-        if name in resource_valid_fields:
-            if resource_valid_fields[name]:
-                resource_valid_fields[name](name, value, path, line)
+        if name in valid_fields:
+            if valid_fields[name]:
+                valid_fields[name](name, value, path, line)
         else:
-            warning(path, line, f"{name} not a known RESOURCE field")
+            if not check_special or not check_special(name, value, path, line):
+                warning(path, line, f"{name} not a known {nodename} field")
+
+def parse_resource(path, line, resnode):
+    check_fields(path, line, resnode, 'RESOURCE', resource_required_fields, resource_valid_fields)
     rescost = 0
     if resnode.HasValue("name"):
         name = resnode.GetValue("name")
@@ -429,6 +518,8 @@ def parse_resource(path, line, resnode):
             try:
                 rescost = float(rescost)
             except ValueError:
+                rescost = 0
+            except TypeError:
                 rescost = 0
     if resnode.HasValue("amount") and resnode.HasValue("maxAmount"):
         try:
@@ -442,27 +533,19 @@ def parse_resource(path, line, resnode):
             rescost *= amount
     return rescost
 
+def part_check_special(name, value, path, line):
+    if name[:5] == "node_":
+        check_node(name, value, path, line)
+    elif name[:6] == "sound_":
+        pass
+    elif name[:3] == "fx_":
+        pass
+    else:
+        return False
+    return True
+
 def parse_part(path, line, partnode):
-    seen_fields = {}
-    for req in part_required_fields:
-        if not partnode.HasValue(req[0]):
-            req[1](path, line, req[2])
-    for name, value, line in partnode.values:
-        if name in seen_fields:
-            warning(path, line, f"{name} dups {name} on line {seen_fields[name]}")
-        else:
-            seen_fields[name] = line
-        if name in part_valid_fields:
-            if part_valid_fields[name]:
-                part_valid_fields[name](name, value, path, line)
-        elif name[:5] == "node_":
-            check_node(name, value, path, line)
-        elif name[:6] == "sound_":
-            pass
-        elif name[:3] == "fx_":
-            pass
-        else:
-            warning(path, line, f"{name} not a known Part field")
+    check_fields(path, line, partnode, 'PART', part_required_fields, part_valid_fields, part_check_special)
     resource_cost = 0.0
     for name, node, line in partnode.nodes:
         if name == 'RESOURCE':
@@ -476,8 +559,18 @@ def parse_part(path, line, partnode):
             if cost < resource_cost:
                 warning(path, line, f"part cost {cost} is not greater than resouce cost {resource_cost} (:skwod:)")
 
+def parse_resource_drain_definition(path, line, resdrainnode):
+    check_fields(path, line, resdrainnode, 'RESOURCE_DRAIN_DEFINITION', resdrain_required_fields, resdrain_valid_fields)
+
+def parse_resource_definition(path, line, resdefnode):
+    check_fields(path, line, resdefnode, 'RESOURCE_DEFINITION', resdef_required_fields, resdef_valid_fields)
+    for name, node, line in resdefnode.nodes:
+        if name == 'RESOURCE_DRAIN_DEFINITION':
+            resource_cost += parse_resource_drain_definition(path, line, node)
+
 parsers = {
     'PART': parse_part,
+    'RESOURCE_DEFINITION': parse_resource_definition,
 }
 
 options, cfgfiles = getopt.getopt(sys.argv[1:], shortopts, longopts)
