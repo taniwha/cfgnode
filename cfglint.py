@@ -483,7 +483,7 @@ parsers = {
 options, cfgfiles = getopt.getopt(sys.argv[1:], shortopts, longopts)
 for opt, arg in options:
     if opt == "--gamedata":
-        recurse_tree(arg, find_resources)
+        recurse_tree(os.path.expanduser(arg), find_resources)
     elif opt == "--resources":
         find_resources(os.path.expanduser(arg))
 
