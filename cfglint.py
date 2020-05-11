@@ -19,26 +19,18 @@
 
 # <pep8 compliant>
 
-from cfgnode import *
 import sys
 import os
 import getopt
-from uuid import uuid4
 
-def recurse_tree(path, func):
-    files = os.listdir(path)
-    files.sort()
-    for f in files:
-        if f[0] in [".", "_"]:
-            continue
-        p = os.path.join(path, f)
-        if os.path.isdir(p):
-            recurse_tree(p, func)
-        else:
-            func(p)
+from cfgnode import *
+from kspdata import recurse_tree, find_resources, resources
 
 shortopts = ''
-longopts = []
+longopts = [
+    'gamedata=',
+    'resources='
+]
 errors = False
 
 def error(path, line, message):
@@ -71,7 +63,7 @@ part_required_fields = (
     ("crashTolerance", warning, "crashTolerance defaults to 9"),
     ("maxTemp", warning, "maxTemp defaults to 2000 (Kelvin)"),
     ("heatConductivity", warning, "heatConductivity defaults to 0.12"),
-    ("skinInternalConductionMult", warning, "heatConductivity defaults to 1"),
+    ("skinInternalConductionMult", warning, "skinInternalConductionMult defaults to 1"),
     ("emissiveConstant", warning, "emissiveConstant defaults to 0.4"),
 )
 
@@ -398,11 +390,68 @@ compoundpart_valid_fields = {
     'maxLength': positive_nonzero_float,
 }
 
-def parse_part(path, line, node):
-    for req in part_required_fields:
-        if not node.HasValue(req[0]):
+def check_resource(name, value, path, line):
+    if value not in resources:
+        error(path, line, f"'{value}' not a known resource")
+
+resource_required_fields = (
+    ('name', error, "Missing field 'name'"),
+    ('amount', error, "Missing field 'amount'"),
+    ('maxAmount', error, "Missing field 'maxAmount'"),
+)
+
+resource_valid_fields = {
+    'name': check_resource,
+    'amount': positive_float,
+    'maxAmount': positive_float,
+}
+
+def parse_resource(path, line, resnode):
+    seen_fields = {}
+    for req in resource_required_fields:
+        if not resnode.HasValue(req[0]):
             req[1](path, line, req[2])
-    for name, value, line in node.values:
+    for name, value, line in resnode.values:
+        if name in seen_fields:
+            warning(path, line, f"{name} dups {name} on line {seen_fields[name]}")
+        else:
+            seen_fields[name] = line
+        if name in resource_valid_fields:
+            if resource_valid_fields[name]:
+                resource_valid_fields[name](name, value, path, line)
+        else:
+            warning(path, line, f"{name} not a known RESOURCE field")
+    rescost = 0
+    if resnode.HasValue("name"):
+        name = resnode.GetValue("name")
+        if name in resources:
+            rescost = resources[name].GetValue("unitCost")
+            try:
+                rescost = float(rescost)
+            except ValueError:
+                rescost = 0
+    if resnode.HasValue("amount") and resnode.HasValue("maxAmount"):
+        try:
+            amount = float(resnode.GetValue("amount"))
+            maxAmount = float(resnode.GetValue("maxAmount"))
+        except ValueError:
+            rescost = 0
+        else:
+            if amount > maxAmount:
+                warning(path, line, f"amount {amount} > maxAmount {maxAmount}")
+            rescost *= amount
+    return rescost
+
+def parse_part(path, line, partnode):
+    seen_fields = {}
+    for req in part_required_fields:
+        if not partnode.HasValue(req[0]):
+            req[1](path, line, req[2])
+    for name, value, line in partnode.values:
+        if name in seen_fields:
+            warning(path, line, f"{name} dups {name} on line {seen_fields[name]}")
+        else:
+            seen_fields[name] = line
         if name in part_valid_fields:
             if part_valid_fields[name]:
                 part_valid_fields[name](name, value, path, line)
@@ -414,15 +463,33 @@ def parse_part(path, line, node):
             pass
         else:
             warning(path, line, f"{name} not a known Part field")
+    resource_cost = 0.0
+    for name, node, line in partnode.nodes:
+        if name == 'RESOURCE':
+            resource_cost += parse_resource(path, line, node)
+    if partnode.HasValue("cost"):
+        try:
+            cost = float(partnode.GetValue("cost"))
+        except ValueError:
+            pass
+        else:
+            if cost < resource_cost:
+                warning(path, line, f"part cost {cost} is not greater than resouce cost {resource_cost} (:skwod:)")
 
-options, cfgfiles = getopt.getopt(sys.argv[1:], shortopts, longopts)
 parsers = {
     'PART': parse_part,
 }
 
+options, cfgfiles = getopt.getopt(sys.argv[1:], shortopts, longopts)
+for opt, arg in options:
+    if opt == "--gamedata":
+        recurse_tree(arg, find_resources)
+    elif opt == "--resources":
+        find_resources(os.path.expanduser(arg))
+
 for path in cfgfiles:
     try:
-        cfg = ConfigNode.loadfile(path)
+        cfg = ConfigNode.loadfile(os.path.expanduser(path))
     except ConfigNodeError as e:
         print(path + e.message)
     else:
