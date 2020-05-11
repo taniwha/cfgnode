@@ -86,7 +86,10 @@ class ConfigNode:
     @classmethod
     def loadfile(cls, path):
         bytes = open(path, "rb").read()
-        text = "".join(map(lambda b: chr(b), bytes))
+        try:
+            text = "".join(map(lambda b: chr(b), bytes))
+        except TypeError:
+            text = bytes
         return cls.load(text)
     def GetNode(self, key):
         for n in self.nodes:
