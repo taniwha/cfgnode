@@ -566,7 +566,7 @@ def parse_resource_definition(path, line, resdefnode):
     check_fields(path, line, resdefnode, 'RESOURCE_DEFINITION', resdef_required_fields, resdef_valid_fields)
     for name, node, line in resdefnode.nodes:
         if name == 'RESOURCE_DRAIN_DEFINITION':
-            resource_cost += parse_resource_drain_definition(path, line, node)
+            parse_resource_drain_definition(path, line, node)
 
 parsers = {
     'PART': parse_part,
