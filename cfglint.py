@@ -208,6 +208,31 @@ def check_node(name, value, path, line):
         except:
             error(path, line, f"{name}[i] not a valid int")
 
+def filepath(extensions):
+    class path_check:
+        def __init__(self, extensions):
+            self.extensions = extensions
+        def check(self, name, value, path, line):
+            if "." in value:
+                ext = value[value.rindex("."):]
+                if ext in self.extensions:
+                    error(path, line, f"file extension specified for {name}")
+                else:
+                    warning(path, line, f". in file names not a good idea")
+            if "\\" in value:
+                error(path, line, f"\\ is not a universally valid directory separator. Use /")
+            elif "/" not in value:
+                warning(path, line, "file paths need to be GameData relative")
+    p = path_check(extensions)
+    return p.check
+
+def texture_spec(name, value, path, line):
+    vals = value.split(",")
+    if len(vals) != 2:
+        error(path, line, f"{name} must be two comma-separated strings")
+    else:
+        filepath((".dds", ".jpeg", ".jpg", ".mbm", ".png", ".tga", ".truecolor"))(name, vals[1], path, line)
+
 module_enum = {
     'Part',
     'CompoundPart',
@@ -496,16 +521,32 @@ resdrain_valid_fields = {
     'drainFXDefinition': None,
 }
 
-def check_fields(path, line, node, nodename, required_fields, valid_fields, check_special=None):
+model_required_fields = (
+    ('model', error, "Missing field 'model'"),
+)
+
+model_valid_fields = {
+    'model': filepath((".mu", ".dae")),
+    'parent': None,
+    'name': None,
+    'scale': vector,
+    'position': vector,
+    'rotation': vector, #ick, euler angles
+    'iconHidden': boolean,
+    'texture': texture_spec,
+}
+
+def check_fields(path, line, node, nodename, required_fields, valid_fields, check_special=None, dups_ok = set()):
     seen_fields = {}
     for req in required_fields:
         if not node.HasValue(req[0]):
             req[1](path, line, req[2])
     for name, value, line in node.values:
-        if name in seen_fields:
-            warning(path, line, f"{name} dups {name} on line {seen_fields[name]}")
-        else:
-            seen_fields[name] = line
+        if name not in dups_ok:
+            if name in seen_fields:
+                warning(path, line, f"{name} dups {name} on line {seen_fields[name]}")
+            else:
+                seen_fields[name] = line
         if name in valid_fields:
             if valid_fields[name]:
                 valid_fields[name](name, value, path, line)
@@ -538,6 +579,9 @@ def parse_resource(path, line, resnode):
             rescost *= amount
     return rescost
 
+def parse_model(path, line, mdlnode):
+    check_fields(path, line, mdlnode, 'MODEL', model_required_fields, model_valid_fields, dups_ok = {'texture'})
+
 def part_check_special(name, value, path, line):
     if name[:5] == "node_":
         check_node(name, value, path, line)
@@ -555,6 +599,8 @@ def parse_part(path, line, partnode):
     for name, node, line in partnode.nodes:
         if name == 'RESOURCE':
             resource_cost += parse_resource(path, line, node)
+        if name == 'MODEL':
+            parse_model(path, line, node)
     if partnode.HasValue("cost"):
         try:
             cost = float(partnode.GetValue("cost"))
