@@ -161,8 +161,9 @@ def ignored(name, value, path, line):
 
 def physics_significance(name, value, path, line):
     warning(path, line, f"use of PhysicsSignificance is discouraged. use physicalSignificance instead")
-    if value not in ['0', '1']:
-        error(path, line, f"{name} must be 0 (full physics) or 1 (physicsless)")
+    print("    NOTE: if not -1 (default), parts attached to BG robotics parts are forced full physics with a minimum mass of 6.5kg")
+    if value not in ['-1', '0', '1']:
+        error(path, line, f"{name} must be -1, 0 (full physics) or 1 (physicsless)")
 
 def enum(enum_values, case_insensitive=False):
     class enum_check:
