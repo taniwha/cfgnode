@@ -160,11 +160,9 @@ def ignored(name, value, path, line):
     warning(path, line, f"{name} is ignored")
 
 def physics_significance(name, value, path, line):
-    if value not in ['FULL', 'NONE']:
-        if value in ['-1', '0', '1']:
-            warning(path, line, f"{name} should be FULL or NONE, not a number")
-        else:
-            error(path, line, f"{value} not valid for {name}")
+    warning(path, line, f"use of PhysicsSignificance is discouraged. use physicalSignificance instead")
+    if value not in ['0', '1']:
+        error(path, line, f"{name} must be 0 (full physics) or 1 (physicsless)")
 
 def enum(enum_values, case_insensitive=False):
     class enum_check:
@@ -212,6 +210,11 @@ def check_node(name, value, path, line):
 module_enum = {
     'Part',
     'CompoundPart',
+}
+
+physicalSignificance_enum = {
+    'FULL',
+    'NONE',
 }
 
 TechRequired_enum = {
@@ -388,6 +391,7 @@ part_valid_fields = {
     'buoyancyUseSine': boolean,
     'buoyancy': positive_float,
     'PhysicsSignificance':physics_significance,
+    'physicalSignificance':enum(physicalSignificance_enum),
     'mirrorRefAxis': vector,
     'radiatorMax': positive_nonzero_float,
     'boundsCentroidOffset': vector,
